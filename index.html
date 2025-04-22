@@ -2,17 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MoodGarden – Tu Jardín Emocional</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 40px;
       margin: 0;
-      transition: background 1s ease;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.5s ease;
     }
 
     .container {
@@ -21,7 +21,7 @@
       border-radius: 15px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 700px;
+      max-width: 600px;
       text-align: center;
     }
 
@@ -54,57 +54,27 @@
       background-color: #45a049;
     }
 
+    #message {
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    #countdown {
+      font-size: 14px;
+      margin-top: 5px;
+      color: #888;
+    }
+
     #garden {
+      margin-top: 30px;
       display: flex;
       flex-wrap: wrap;
-      margin-top: 20px;
       gap: 10px;
       justify-content: center;
     }
 
     .flower {
       font-size: 32px;
-      transition: transform 0.2s ease;
-    }
-
-    .flower:hover {
-      transform: scale(1.2);
-    }
-
-    #message {
-      font-size: 14px;
-      color: #888;
-      margin-top: 10px;
-    }
-
-    #history {
-      margin-top: 30px;
-      text-align: left;
-    }
-
-    .history-item {
-      background: #f9f9f9;
-      margin-bottom: 8px;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    .history-item:hover {
-      background-color: #f1f1f1;
-    }
-
-    #noteDisplay {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #333;
-    }
-
-    .reset-btn {
-      background-color: #f44336;
-      color: white;
-      margin-top: 20px;
     }
   </style>
 </head>
@@ -121,58 +91,47 @@
     </select>
 
     <textarea id="personalNote" placeholder="Escribe una nota personal (opcional)..." rows="3"></textarea>
-    
+
     <button id="plantBtn" onclick="plantMood()">Plantar Flor</button>
     <div id="message"></div>
-
-    <div id="garden"></div>
-
-    <div id="history">
-      <h3>🗓️ Historial Emocional</h3>
-      <div id="historyList"></div>
-    </div>
-
-    <div id="noteDisplay"></div>
-
-    <!-- Botón de Reiniciar -->
-    <button class="reset-btn" onclick="resetMoodGarden()">Reiniciar Jardín Emocional</button>
+    <div id="countdown"></div>
   </div>
 
+  <div id="garden"></div>
+
   <script>
-    const today = new Date();
-    const todayISO = today.toISOString().slice(0, 10); // Obtiene la fecha actual en formato YYYY-MM-DD
-    const plantBtn = document.getElementById('plantBtn');
     const message = document.getElementById('message');
-    const historyList = document.getElementById('historyList');
-    const noteDisplay = document.getElementById('noteDisplay');
-    const moodSelect = document.getElementById('mood');
+    const countdown = document.getElementById('countdown');
     const garden = document.getElementById('garden');
+    const plantBtn = document.getElementById('plantBtn');
 
-    // Obtener la última emoción del usuario (si existe) al cargar la página
-    const lastMood = localStorage.getItem('lastMood');
-    if (lastMood) {
-      moodSelect.value = lastMood;
-      changeBackground(); // Cambia el fondo al cargar la página
+    const backgroundColors = {
+      '🌻': '#fff9c4',
+      '🌧️': '#bbdefb',
+      '🌺': '#f8bbd0',
+      '🌪️': '#cfd8dc',
+      '🍃': '#c8e6c9'
+    };
+
+    function changeBackground() {
+      const mood = document.getElementById('mood').value;
+      document.body.style.backgroundColor = backgroundColors[mood] || '#ffffff';
+      localStorage.setItem('lastMood', mood);
     }
 
-    // Mostrar flor de hoy si ya está plantada
-    const todayEntry = localStorage.getItem('moodgarden-' + todayISO);
-    if (todayEntry) {
-      const flower = JSON.parse(todayEntry);
-      createFlower(flower.mood);
-    }
-
-    // Mostrar historial completo
-    for (let key in localStorage) {
-      if (key.startsWith('moodgarden-')) {
-        const date = key.split('moodgarden-')[1];
-        const flower = JSON.parse(localStorage.getItem(key));
-        addToHistory(date, flower.mood, flower.note);
-      }
+    function getTodayKey() {
+      const today = new Date();
+      return 'mood-' + today.toISOString().slice(0, 10);
     }
 
     function plantMood() {
-      const mood = moodSelect.value;
+      const key = getTodayKey();
+      if (localStorage.getItem(key)) {
+        message.textContent = 'Ya has plantado una flor hoy 🌸. Vuelve mañana.';
+        return;
+      }
+
+      const mood = document.getElementById('mood').value;
       const note = document.getElementById('personalNote').value;
 
       const flower = {
@@ -180,95 +139,78 @@
         note: note
       };
 
-      // Guardar en localStorage
-      localStorage.setItem('moodgarden-' + todayISO, JSON.stringify(flower));
-
-      // Mostrar flor y mensaje
-      createFlower(mood);
-      addToHistory(todayISO, mood, note);
-      message.textContent = 'Flor plantada 🌸. Puedes plantar más flores cuando quieras.';
-
-      // Crear o actualizar el jardín
-      garden.innerHTML = '';
-      createFlower(mood);
-
-      // Guardar la última emoción seleccionada
-      localStorage.setItem('lastMood', mood);
+      localStorage.setItem(key, JSON.stringify(flower));
+      addFlowerToGarden(flower);
+      message.textContent = '🌸 ¡Flor plantada!';
+      plantBtn.disabled = true;
+      startCountdown();
     }
 
-    function createFlower(mood) {
-      const flower = document.createElement('div');
-      flower.className = 'flower';
-      flower.textContent = mood;
-      garden.appendChild(flower);
+    function addFlowerToGarden(flower) {
+      const flowerDiv = document.createElement('div');
+      flowerDiv.className = 'flower';
+      flowerDiv.title = flower.note || '';
+      flowerDiv.textContent = flower.mood;
+      garden.appendChild(flowerDiv);
     }
 
-    function addToHistory(date, mood, note) {
-      const item = document.createElement('div');
-      item.className = 'history-item';
-      item.textContent = `📅 ${date} → ${mood}`;
-      item.onclick = function () {
-        toggleNoteDisplay(date, note, item);
-      };
-      historyList.appendChild(item);
+    function loadGarden() {
+      const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith('mood-'))
+        .sort();
+
+      keys.forEach(key => {
+        const flower = JSON.parse(localStorage.getItem(key));
+        addFlowerToGarden(flower);
+      });
     }
 
-    function toggleNoteDisplay(date, note, item) {
-      const noteDisplayId = `note-${date}`;
-      let noteElement = document.getElementById(noteDisplayId);
+    function startCountdown() {
+      function updateCountdown() {
+        const now = new Date();
+        const tomorrow = new Date();
+        tomorrow.setHours(24, 0, 0, 0); // mañana a las 00:00
 
-      // Si la nota ya está visible, la ocultamos
-      if (noteElement) {
-        noteElement.style.display = noteElement.style.display === 'none' ? 'block' : 'none';
-      } else {
-        // Si no existe la nota, la creamos y mostramos
-        noteElement = document.createElement('div');
-        noteElement.id = noteDisplayId;
-        noteElement.className = 'history-item';
-        noteElement.textContent = note ? `Nota: ${note}` : 'No se agregó ninguna nota.';
-        historyList.appendChild(noteElement);
+        const diff = tomorrow - now;
+
+        if (diff <= 0) {
+          plantBtn.disabled = false;
+          countdown.textContent = '';
+          message.textContent = '';
+          return;
+        }
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        countdown.textContent = `⏳ Podrás plantar otra flor en ${hours}h ${minutes}m ${seconds}s`;
+
+        setTimeout(updateCountdown, 1000);
+      }
+
+      updateCountdown();
+    }
+
+    // Inicialización
+    function init() {
+      const lastMood = localStorage.getItem('lastMood');
+      if (lastMood) {
+        document.getElementById('mood').value = lastMood;
+        changeBackground();
+      }
+
+      loadGarden();
+
+      const todayKey = getTodayKey();
+      if (localStorage.getItem(todayKey)) {
+        plantBtn.disabled = true;
+        startCountdown();
+        message.textContent = 'Ya has plantado una flor hoy 🌸. Vuelve mañana.';
       }
     }
 
-    function changeBackground() {
-      const mood = moodSelect.value;
-
-      // Guardar la última emoción seleccionada
-      localStorage.setItem('lastMood', mood);
-
-      switch (mood) {
-        case "🌻":
-          document.body.style.backgroundColor = "#FFF9C4"; // Pastel amarillo
-          break;
-        case "🌧️":
-          document.body.style.backgroundColor = "#B3E5FC"; // Pastel azul
-          break;
-        case "🌺":
-          document.body.style.backgroundColor = "#F8BBD0"; // Pastel rosa
-          break;
-        case "🌪️":
-          document.body.style.backgroundColor = "#E1BEE7"; // Pastel morado
-          break;
-        case "🍃":
-          document.body.style.backgroundColor = "#C8E6C9"; // Pastel verde
-          break;
-        default:
-          document.body.style.backgroundColor = "#e6f2ff"; // Fondo por defecto
-      }
-    }
-
-    // Función para reiniciar el jardín
-    function resetMoodGarden() {
-      localStorage.clear(); // Borra todo el almacenamiento local
-
-      // Reinicia la visualización
-      garden.innerHTML = '';
-      historyList.innerHTML = '';
-      message.textContent = 'El jardín emocional ha sido reiniciado.';
-
-      // Restablece el fondo a un color neutro
-      document.body.style.backgroundColor = "#e6f2ff";
-    }
+    window.onload = init;
   </script>
 </body>
 </html>
